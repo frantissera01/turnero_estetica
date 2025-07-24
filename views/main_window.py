@@ -2,15 +2,18 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from typing import Any
 from datetime import datetime
+
 from views.planes_view import abrir_planes 
-from views.turnos_view import abrir_turnero
-from views.clientes_view import abrir_clientes
+from views.turnos.main_view import abrir_turnero
+from views.clientes.main_view import abrir_clientes
 from views.empleados_view import abrir_empleados
+
 from controllers.horarios_controller import registrar_ingreso, registrar_egreso, listar_empleados_disponibles
 from models.horarios_model import empleados_en_turno, obtener_registro_sin_egreso
 from models.empleados_model import obtener_empleado_por_id
-from PIL import Image, ImageTk
+
 import os
+from PIL import Image, ImageTk
 
 class MainWindow:
     def __init__(self, root):
