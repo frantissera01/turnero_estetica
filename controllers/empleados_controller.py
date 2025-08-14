@@ -1,24 +1,22 @@
-# controllers/empleados_controller.py
-from models.empleados_model import(
-    insertar_empleado,
-    obtener_empleados_activos,
-    baja_empleado,
-) 
-from models.empleados_model import obtener_empleados_inactivos, reactivar_empleado as reactivar
+from models.empleados_model import EmpleadosModel
 
-def registrar_empleado(nombre, tarifa):
-    return insertar_empleado(nombre, tarifa)
+class EmpleadosController:
+    def __init__(self, view):
+        self.view = view
+        self.model = EmpleadosModel()
 
-def listar_empleados():
-    return obtener_empleados_activos()
+    def cargar_empleados(self):
+        empleados = self.model.obtener_empleados()
+        self.view.mostrar_empleados(empleados)
 
-def eliminar_empleado(empleado_id):
-    baja_empleado(empleado_id)
+    def guardar(self, datos):
+        eid = datos.get("id")
+        if eid:
+            self.model.actualizar_empleado(eid, datos["nombre"], datos["apellido"], datos["tarifa"]) 
+        else:
+            self.model.agregar_empleado(datos["nombre"], datos["apellido"], datos["tarifa"]) 
+        self.cargar_empleados()
 
-
-def listar_empleados_inactivos():
-    return obtener_empleados_inactivos()
-
-def reactivar_empleado(empleado_id):
-    reactivar(empleado_id)
-
+    def eliminar(self, empleado_id):
+        self.model.eliminar_empleado(empleado_id)
+        self.cargar_empleados()

@@ -1,49 +1,20 @@
-# models/empleados_model.py
-from models.db import conectar
+from models.base_model import BaseModel
 
+class EmpleadosModel(BaseModel):
+    def obtener_empleados(self):
+        return self.fetch_all("SELECT * FROM empleados ORDER BY id DESC")
 
-def insertar_empleado(nombre, tarifa_por_hora):
-    conn = conectar()
-    cursor = conn.cursor()
-    query = "INSERT INTO empleados (nombre, tarifa_por_hora) VALUES (%s, %s)"
-    cursor.execute(query, (nombre, tarifa_por_hora))
-    conn.commit()
-    conn.close()
+    def agregar_empleado(self, nombre, apellido, tarifa):
+        self.execute_query(
+            "INSERT INTO empleados (nombre, apellido, tarifa_hora) VALUES (%s, %s, %s)",
+            (nombre, apellido, tarifa)
+        )
 
-def obtener_empleados_activos():
-    conn = conectar()
-    cursor = conn.cursor(dictionary=True)
-    query = "SELECT id, nombre, tarifa_por_hora FROM empleados WHERE activo = TRUE"
-    cursor.execute(query)
-    return cursor.fetchall()
+    def actualizar_empleado(self, empleado_id, nombre, apellido, tarifa):
+        self.execute_query(
+            "UPDATE empleados SET nombre=%s, apellido=%s, tarifa_hora=%s WHERE id=%s",
+            (nombre, apellido, tarifa, empleado_id)
+        )
 
-def obtener_empleado_por_id(empleado_id):
-    conn = conectar()
-    cursor = conn.cursor(dictionary=True)
-    query="SELECT id, nombre, tarifa_por_hora  FROM empleados WHERE id = %s"
-    cursor.execute(query, (empleado_id,))
-    empleado = cursor.fetchone()
-    conn.close()
-    return empleado
-
-def baja_empleado(empleado_id):
-    conn = conectar()
-    cursor = conn.cursor()
-    query = "UPDATE empleados SET activo = FALSE WHERE id = %s"
-    cursor.execute(query, (empleado_id,))
-    conn.commit()
-
-def obtener_empleados_inactivos():
-    conn = conectar()
-    cursor = conn.cursor(dictionary=True)
-    query = "SELECT id, nombre, tarifa_por_hora FROM empleados WHERE activo = FALSE"
-    cursor.execute(query)
-    return cursor.fetchall()
-
-def reactivar_empleado(empleado_id):
-    conn = conectar()
-    cursor = conn.cursor()
-    query = "UPDATE empleados SET activo = TRUE WHERE id = %s"
-    cursor.execute(query, (empleado_id,))
-    conn.commit()
-
+    def eliminar_empleado(self, empleado_id):
+        self.execute_query("DELETE FROM empleados WHERE id = %s", (empleado_id,))
