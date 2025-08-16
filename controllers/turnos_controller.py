@@ -1,6 +1,6 @@
 from models.turnos_model import TurnosModel
 from models.clientes_model import ClientesModel
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 
 class TurnosController:
     HORAS = [f"{h:02d}:00:00" for h in range(7, 21)]  # 07..20
@@ -58,3 +58,17 @@ class TurnosController:
         self.model.eliminar(turno_id)
         self.cargar_semana()
         self.listar_slot(fecha, hora)
+
+    def set_fecha_ref(self, fecha_str: str):
+        """Recibe 'YYYY-MM-DD', setea self.ref y recarga semana."""
+        try:
+            self.ref = datetime.strptime(fecha_str, "%Y-%m-%d").date()
+        except Exception:
+            self.ref = date.today()
+        self.cargar_semana()
+
+    def rango_semana_actual(self):
+        """Devuelve (lunes, sábado) de la semana de self.ref para mostrar en UI."""
+        lunes = self.ref - timedelta(days=(self.ref.weekday()))
+        sab = lunes + timedelta(days=5)
+        return lunes, sab

@@ -1,48 +1,68 @@
-# views/main_view.py
+# views/main_view.py (solo las partes nuevas/ajustadas)
 import tkinter as tk
 from tkinter import ttk
-from PIL import Image, ImageTk  # pip install pillow
+from PIL import Image, ImageTk
 import os
-
 from controllers.main_controller import MainController
-from ui.ui_theme import init_style, COLORS
+from ui.ui_theme import COLORS
 
 class MainView(tk.Frame):
     def __init__(self, root):
         super().__init__(root, bg=COLORS["bg"])
-        self.controller = MainController(root)
+        # controller recibe referencia a esta vista para poder “volver”
+        self.controller = MainController(root, self)
+        self._logo_img = None
         self.pack(fill="both", expand=True)
-        self._logo_img = None  # mantener referencia
-        self._build()
+        self._build_shell()
+        self.render_home()  # muestra el menú principal al inicio
 
-    def _build(self):
-        # Header
+    def _build_shell(self):
+        # Header con logo y título (igual que ya tenías)
         header = tk.Frame(self, bg=COLORS["bg"])
         header.pack(fill="x", padx=16, pady=(16, 8))
 
-        # Logo (esquina sup. izq.)
-        logo_path = os.path.join("assets", "logo.png")  # ajustá nombre
+        logo_path = os.path.join("assets", "logo.png")
         if os.path.exists(logo_path):
-            raw = Image.open(logo_path).convert("RGBA")
-            raw = raw.resize((44, 44), Image.Resampling.LANCZOS) 
+            try:
+                resample = Image.Resampling.LANCZOS
+            except AttributeError:
+                resample = Image.Resampling.LANCZOS
+            raw = Image.open(logo_path).convert("RGBA").resize((44, 44), resample)
             self._logo_img = ImageTk.PhotoImage(raw)
             tk.Label(header, image=self._logo_img, bg=COLORS["bg"]).pack(side="left")
 
-        ttk.Label(header, text="Las Magnolias ", style="Title.TLabel").pack(side="left", padx=12)
+        ttk.Label(header, text="Turnero Estética", style="Title.TLabel").pack(side="left", padx=12)
 
-        # Contenedor central (cards)
-        wrap = tk.Frame(self, bg=COLORS["bg"])
-        wrap.pack(fill="both", expand=True, padx=16, pady=16)
+        # Contenedor central donde iremos metiendo el home o las sub-vistas
+        self.content = tk.Frame(self, bg=COLORS.get("bg", "#FFFFFF"))
+        self.content.pack(fill="both", expand=True, padx=16, pady=16)
 
-        nav = ttk.LabelFrame(wrap, text="Navegación", style="H2.TLabel")
-        nav.config(labelanchor="n")  # título centrado
-        nav.configure(style="Card.TFrame")
-        nav.pack(fill="x", pady=8)
+        # Footer (opcional)
+        footer = tk.Frame(self, bg=COLORS["bg"])
+        footer.pack(fill="x", padx=16, pady=(0, 16))
+        ttk.Separator(footer, orient="horizontal").pack(fill="x", pady=8)
+        tk.Label(footer, text="© 2025 Tu Centro", bg=COLORS["bg"], fg=COLORS.get("text_muted", "#6E5759")).pack()
 
-        grid = tk.Frame(nav, bg=COLORS["surface"])
+    def clear_content(self):
+        for w in self.content.winfo_children():
+            w.destroy()
+
+    def open_in_content(self, factory):
+        """factory(parent) debe devolver el frame/vista a mostrar"""
+        self.clear_content()
+        factory(self.content)
+
+    # ======= HOME (menú principal) =======
+    def render_home(self):
+        self.clear_content()
+
+        card = ttk.Frame(self.content, style="Card.TFrame")
+        card.pack(fill="x", pady=8)
+
+        ttk.Label(card, text="Navegación", style="Subtitle.TLabel").pack(anchor="w", padx=12, pady=(10, 0))
+        grid = tk.Frame(card, bg=COLORS.get("surface", "#FFFFFF"))
         grid.pack(padx=12, pady=12, fill="x")
 
-        # Matriz de botones (2x3 por ejemplo)
         buttons = [
             ("Gestión de Empleados", self.controller.abrir_gestion_empleados),
             ("Gestión de Clientes",   self.controller.abrir_gestion_clientes),
@@ -51,18 +71,11 @@ class MainView(tk.Frame):
             ("Planes y Asignaciones", self.controller.abrir_planes),
         ]
 
-        # Grid responsivo
         cols = 3
         for i in range(cols):
             grid.grid_columnconfigure(i, weight=1)
 
         for idx, (text, cmd) in enumerate(buttons):
             r, c = divmod(idx, cols)
-            btn = ttk.Button(grid, text=text, style="Primary.TButton", command=cmd)
+            btn = ttk.Button(grid, text=text, style="Rounded.TButton", command=cmd)
             btn.grid(row=r, column=c, padx=8, pady=8, sticky="ew")
-
-        # Pie (opcional)
-        footer = tk.Frame(self, bg=COLORS["bg"])
-        footer.pack(fill="x", padx=16, pady=(0, 16))
-        ttk.Separator(footer, orient="horizontal").pack(fill="x", pady=8)
-        tk.Label(footer, text="© 2025 Tu Centro", bg=COLORS["bg"], fg=COLORS["text_muted"]).pack()
