@@ -2,17 +2,27 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from controllers.clientes_controller import ClientesController
 
+
 class ClientesView(tk.Frame):
     ESTADOS = ("PENDIENTE", "PAGO")
 
-    def __init__(self, root):
+    def __init__(self, root, on_back=None):
         super().__init__(root)
         self.controller = ClientesController(self)
+        self.on_back = on_back  # callback para volver al menú
         self.pack(fill="both", expand=True)
         self._build()
         self.controller.cargar()
 
     def _build(self):
+        # Header con botón Volver
+        header = tk.Frame(self)
+        header.pack(fill="x", padx=10, pady=(10, 0))
+
+        if self.on_back:
+            ttk.Button(header, text="← Volver", command=self.on_back).pack(side="left")
+
+        # --- Formulario ---
         form = tk.Frame(self)
         form.pack(fill="x", padx=10, pady=10)
 
@@ -41,12 +51,14 @@ class ClientesView(tk.Frame):
         cmb = ttk.Combobox(form, textvariable=self.var_estado, values=self.ESTADOS, state="readonly", width=17)
         cmb.grid(row=r, column=3, padx=5)
 
+        # --- Botones ---
         btns = tk.Frame(self)
         btns.pack(fill="x", padx=10)
         ttk.Button(btns, text="Nuevo", command=self._limpiar).pack(side="left", padx=5)
         ttk.Button(btns, text="Guardar", command=self._guardar).pack(side="left", padx=5)
         ttk.Button(btns, text="Eliminar", command=self._eliminar).pack(side="left", padx=5)
 
+        # --- Tabla ---
         cols = ("id", "nombre", "apellido", "telefono", "documento", "sesiones_restantes", "estado_pago")
         self.tree = ttk.Treeview(self, columns=cols, show="headings")
         for c in cols:
@@ -59,8 +71,17 @@ class ClientesView(tk.Frame):
             self.tree.delete(i)
         for cl in clientes:
             self.tree.insert(
-                "", "end",
-                values=(cl["id"], cl["nombre"], cl["apellido"], cl.get("telefono"), cl["documento"], cl.get("sesiones_restantes", 0), cl.get("estado_pago", "PENDIENTE"))
+                "",
+                "end",
+                values=(
+                    cl["id"],
+                    cl["nombre"],
+                    cl["apellido"],
+                    cl.get("telefono"),
+                    cl["documento"],
+                    cl.get("sesiones_restantes", 0),
+                    cl.get("estado_pago", "PENDIENTE"),
+                ),
             )
 
     def _cargar_desde_tabla(self, _evt=None):

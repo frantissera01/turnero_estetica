@@ -31,7 +31,7 @@ class MainView(tk.Frame):
             self._logo_img = ImageTk.PhotoImage(raw)
             tk.Label(header, image=self._logo_img, bg=COLORS["bg"]).pack(side="left")
 
-        ttk.Label(header, text="Turnero Estética", style="Title.TLabel").pack(side="left", padx=12)
+        ttk.Label(header, text="Las Magnolias", style="Title.TLabel").pack(side="left", padx=12)
 
         # Contenedor central donde iremos metiendo el home o las sub-vistas
         self.content = tk.Frame(self, bg=COLORS.get("bg", "#FFFFFF"))

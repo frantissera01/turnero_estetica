@@ -1,69 +1,60 @@
+# models/horarios_model.py
 from models.base_model import BaseModel
-from decimal import Decimal
-from datetime import datetime, time
-
+from datetime import datetime, date
+from utils.conversions import to_time 
+ 
 class HorariosModel(BaseModel):
     def registrar_ingreso(self, empleado_id):
-        fecha = datetime.now().date()
-        hora = datetime.now().time()
+        f = date.today()
+        h = datetime.now().time()
         self.execute_query(
             "INSERT INTO horarios_empleados (empleado_id, fecha, hora_ingreso) VALUES (%s, %s, %s)",
-            (empleado_id, fecha, hora)
+            (empleado_id, f, h)
         )
 
     def registrar_egreso(self, empleado_id):
-        fecha = datetime.now().date()
-        hora_egreso = datetime.now().time()
-
-        # Buscar registro de hoy sin hora_egreso
+        f = date.today()
+        h_egreso = datetime.now().time()
         reg = self.fetch_one(
-            "SELECT id, hora_ingreso FROM horarios_empleados WHERE empleado_id=%s AND fecha=%s AND hora_egreso IS NULL",
-            (empleado_id, fecha)
+            "SELECT id, hora_ingreso FROM horarios_empleados "
+            "WHERE empleado_id=%s AND fecha=%s AND hora_egreso IS NULL "
+            "ORDER BY id DESC LIMIT 1",
+            (empleado_id, f)
         )
+        if not reg:
+            return None
 
-        if not isinstance(reg, dict):
-            return None, None
+        hora_ingreso = reg["hora_ingreso"] if isinstance(reg, dict) else reg[1]
+        # convertir a datetime para calcular
+        dt_in = datetime.combine(f, hora_ingreso)
+        dt_out = datetime.combine(f, h_egreso)
+        horas = (dt_out - dt_in).total_seconds() / 3600.0
 
-        # Convertir hora_ingreso a datetime.time si es necesario
-        hora_ingreso_val = reg.get("hora_ingreso")
-        if isinstance(hora_ingreso_val, Decimal) or isinstance(hora_ingreso_val, str):
-            # Si viene como "HH:MM:SS" o decimal, convertirlo
-            hora_ingreso = datetime.strptime(str(hora_ingreso_val), "%H:%M:%S").time()
-        elif isinstance(hora_ingreso_val, time):
-            hora_ingreso = hora_ingreso_val
-        else:
-            return None, None
-
-        horas_trab = (
-            datetime.combine(fecha, hora_egreso) - datetime.combine(fecha, hora_ingreso)
-        ).seconds / 3600.0
-
-        # Obtener tarifa por hora
-        tarifa_row = self.fetch_one("SELECT tarifa_hora FROM empleados WHERE id=%s", (empleado_id,))
-        if not isinstance(tarifa_row, dict):
-            return None, None
-
-        tarifa_val = tarifa_row.get("tarifa_hora")
-        if isinstance(tarifa_val, Decimal):
-            tarifa = float(tarifa_val)
-        elif isinstance(tarifa_val, (int, float)):
-            tarifa = tarifa_val
-        else:
-            return None, None
-
-        pago = horas_trab * tarifa
+        # tarifa opcional (si la tenés)
+        # trow = self.fetch_one("SELECT tarifa_hora FROM empleados WHERE id=%s", (empleado_id,))
+        # tarifa = float(trow["tarifa_hora"]) if isinstance(trow, dict) else float(trow[0])
+        # pago = horas * tarifa
 
         self.execute_query(
-            "UPDATE horarios_empleados SET hora_egreso=%s, horas_trabajadas=%s, pago_diario=%s WHERE id=%s",
-            (hora_egreso, horas_trab, pago, reg.get("id"))
+            "UPDATE horarios_empleados SET hora_egreso=%s, horas_trabajadas=%s WHERE id=%s",
+            (h_egreso, horas, reg["id"] if isinstance(reg, dict) else reg[0])
         )
-        return horas_trab, pago
+        return {
+            "hora_ingreso": hora_ingreso,
+            "hora_egreso": h_egreso,
+            "horas_trabajadas": horas
+        }
 
-
-    def estado_actual(self, empleado_id):
-        fecha = datetime.now().date()
-        reg = self.fetch_one(
-            "SELECT hora_ingreso, hora_egreso FROM horarios_empleados WHERE empleado_id=%s AND fecha=%s ORDER BY id DESC LIMIT 1",
-            (empleado_id, fecha)
+    def estado_hoy(self):
+        """Devuelve lista de registros de hoy (abiertos y cerrados) con datos de empleado."""
+        f = date.today()
+        rows = self.fetch_all(
+            "SELECT he.id, he.empleado_id, he.hora_ingreso, he.hora_egreso, he.horas_trabajadas, "
+            "e.nombre, e.apellido "
+            "FROM horarios_empleados he "
+            "JOIN empleados e ON e.id = he.empleado_id "
+            "WHERE he.fecha=%s "
+            "ORDER BY he.hora_ingreso ASC, he.id ASC",
+            (f,)
         )
-        return reg
+        return rows

@@ -1,6 +1,7 @@
 from models.turnos_model import TurnosModel
 from models.clientes_model import ClientesModel
 from datetime import date, timedelta, datetime
+from utils.conversions import safe_date_str, safe_time_str, safe_int
 
 class TurnosController:
     HORAS = [f"{h:02d}:00:00" for h in range(7, 21)]  # 07..20
@@ -18,7 +19,30 @@ class TurnosController:
 
     def cargar_semana(self):
         ini, fin = self._rango_semana()
-        counts = {(str(r.get("fecha")), str(r.get("hora"))): int(r.get("cantidad", 0)) for r in rows}  # type: ignore
+
+        filas = self.model.contar_por_slot(ini, fin)
+        counts = {}
+
+        for fila in filas:
+            # Soporta dict o tupla: (fecha, hora, cantidad)
+            if isinstance(fila, dict):
+                fecha_val = fila.get("fecha")
+                hora_val = fila.get("hora")
+                cantidad_val = fila.get("cantidad", 0)
+            else:
+                fecha_val = fila[0] if len(fila) > 0 else None
+                hora_val = fila[1] if len(fila) > 1 else None
+                cantidad_val = fila[2] if len(fila) > 2 else 0
+
+            if fecha_val is None or hora_val is None:
+                continue
+            
+            fecha_str = safe_date_str(fecha_val)
+            hora_str  = safe_time_str(hora_val) 
+            cantidad_int = safe_int(cantidad_val)
+
+            counts[(fecha_str, hora_str)] = cantidad_int
+
         self.view.render_grid(ini, fin, self.HORAS, counts, self.model.MAX_POR_HORA)
 
     def anterior(self):

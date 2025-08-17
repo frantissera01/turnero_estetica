@@ -1,16 +1,25 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 from controllers.empleados_controller import EmpleadosController
+from ui.ui_theme import COLORS
 
 class EmpleadosView(tk.Frame):
-    def __init__(self, root):
-        super().__init__(root)
-        self.controller = EmpleadosController(self)
+    def __init__(self, parent, on_back=None):
+        super().__init__(parent, bg=COLORS.get("bg", "#FFFFFF"))
+        self.on_back = on_back
         self.pack(fill="both", expand=True)
         self._build()
-        self.controller.cargar_empleados()
+        self.controller = EmpleadosController(self)
 
     def _build(self):
+        header = tk.Frame(self, bg=COLORS.get("bg", "#FFFFFF"))
+        header.pack(fill="x", padx=10, pady=(10, 0))
+        ttk.Button(header, text="← Volver", style="Rounded.TButton",
+                   command=(self.on_back or (lambda: None))).pack(side="left")
+        
+        cuerpo = tk.Frame(self, bg=COLORS.get("bg", "#FFFFFF"))
+        cuerpo.pack(fill="both", expand=True, padx=10, pady=10)
+        
         form = tk.Frame(self)
         form.pack(fill="x", padx=10, pady=10)
         self.var_id = tk.StringVar()
