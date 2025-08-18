@@ -5,22 +5,32 @@ from datetime import datetime
 Row = Union[Dict[str, object], Tuple[object, ...]]
 
 class EmpleadosModel(BaseModel):
-    def obtener_empleados(self):
-        return self.fetch_all("SELECT * FROM empleados ORDER BY id DESC")
-
-    def agregar_empleado(self, nombre, apellido, tarifa):
+    def listar(self):
+        # Traemos solo las columnas que vamos a usar
+        sql = """
+        SELECT id, nombre, apellido, tarifa_hora
+        FROM empleados
+        ORDER BY apellido, nombre
+        """
+        return self.fetch_all(sql)
+    
+    def insertar(self, datos: dict):
+        # Si tu tabla aún tiene NOT NULL en telefono/documento, ver Nota al final
         self.execute_query(
-            "INSERT INTO empleados (nombre, apellido, tarifa_hora) VALUES (%s, %s, %s)",
-            (nombre, apellido, tarifa)
+            """INSERT INTO empleados (nombre, apellido, tarifa_hora)
+               VALUES (%s, %s, %s)""",
+            (datos["nombre"], datos["apellido"], datos["tarifa_hora"])
         )
 
-    def actualizar_empleado(self, empleado_id, nombre, apellido, tarifa):
+    def actualizar(self, datos: dict):
         self.execute_query(
-            "UPDATE empleados SET nombre=%s, apellido=%s, tarifa_hora=%s WHERE id=%s",
-            (nombre, apellido, tarifa, empleado_id)
+            """UPDATE empleados
+               SET nombre=%s, apellido=%s, tarifa_hora=%s
+               WHERE id=%s""",
+            (datos["nombre"], datos["apellido"], datos["tarifa_hora"], datos["id"])
         )
 
-    def eliminar_empleado(self, empleado_id):
+    def eliminar(self, empleado_id):
         self.execute_query("DELETE FROM empleados WHERE id = %s", (empleado_id,))
 
     def listar_saldos_pendientes(self):

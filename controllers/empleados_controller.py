@@ -29,26 +29,27 @@ class EmpleadosController:
                     "tarifa_hora": _safe_float(r.get("tarifa_hora")),
                 })
             else:
-                # tupla: id, nombre, apellido, telefono, documento, tarifa_hora
+                # tupla: (id, nombre, apellido, tarifa_hora)
                 datos.append({
                     "id": r[0],
                     "nombre": _safe_str(r[1]),
                     "apellido": _safe_str(r[2]),
-                    "tarifa_hora": _safe_float(r[5]),
+                    "tarifa_hora": _safe_float(r[3]),
                 })
         self.view.mostrar_empleados(datos)
 
-    def guardar(self, datos):
-        if datos["id"] is None:
+    def guardar(self, datos: dict):
+        if datos.get("id") is None:
             self.model.insertar(datos)
         else:
             self.model.actualizar(datos)
         self.cargar()
 
-    def eliminar(self, empleado_id):
-        self.model.eliminar_empleado(empleado_id)
+    def eliminar(self, empleado_id: int):
+        self.model.eliminar(empleado_id)
         self.cargar()
 
+    # usado por otras vistas para combos
     def lista_empleados(self):
         return self.model.listar()
 

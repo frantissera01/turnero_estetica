@@ -40,12 +40,15 @@ class EmpleadosView(tk.Frame):
         ttk.Button(btns, text="Editar", command=self._editar).pack(side="left", padx=5)
         ttk.Button(btns, text="Eliminar", command=self._eliminar).pack(side="left", padx=5)
         ttk.Button(btns, text="Pagar", command=self._abrir_pagos).pack(side="left", padx=5) 
+        ttk.Button(btns, text="Refrescar", command=self.controller.cargar).pack(side="left", padx=5)
 
         cols = ("id", "nombre", "apellido", "tarifa_hora")
         self.tree = ttk.Treeview(self, columns=cols, show="headings", height=14)
         headers = ("ID", "Nombre", "Apellido",  "Tarifa/Hora")
-        for c, t in zip(cols, headers):
+        widths = (70, 180, 180, 120)  
+        for c, t, w in zip(cols, headers, widths):
             self.tree.heading(c, text=t)
+            self.tree.column(c, width=w, anchor="w")
         self.tree.pack(fill="both", expand=True, padx=10, pady=10)
         self.tree.bind("<Double-1>", self._cargar_desde_tabla)
 
@@ -55,54 +58,78 @@ class EmpleadosView(tk.Frame):
         self.var_apellido.set("")
         self.var_tarifa.set("0")
 
-    def mostrar_empleados(self, empleados):
-        for i in self.tree.get_children():
-            self.tree.delete(i)
-        for emp in empleados:
-            self.tree.insert("", "end", values=(emp["id"], emp["nombre"], emp["apellido"], emp["tarifa_hora"]))
-
+    # ----- callbacks tabla -----
     def _cargar_desde_tabla(self, _evt=None):
-        item = self.tree.focus()
-        if not item:
+        it = self.tree.focus()
+        if not it:
             return
-        vals = self.tree.item(item, "values")
+        vals = self.tree.item(it, "values")
         self.var_id.set(vals[0])
         self.var_nombre.set(vals[1])
         self.var_apellido.set(vals[2])
         self.var_tarifa.set(vals[3])
 
+    # ----- acciones -----
     def _registrar(self):
+        # Nuevo empleado (INSERT)
+        try:
+            tarifa = float(self.var_tarifa.get() or 0)
+        except Exception:
+            messagebox.showerror("Error", "Tarifa debe ser numérica")
+            return
+
         datos = {
             "id": None,
             "nombre": self.var_nombre.get().strip(),
             "apellido": self.var_apellido.get().strip(),
-            "tarifa_hora": float(self.var_tarifa.get() or 0)
+            "tarifa_hora": tarifa,
         }
         if not datos["nombre"] or not datos["apellido"]:
-            messagebox.showerror("Error", "Nombre, Apellido son obligatorios")
+            messagebox.showerror("Error", "Nombre y Apellido son obligatorios")
             return
-        self.controller.guardar(datos)  # INSERT
+        self.controller.guardar(datos)  # -> INSERT
         self._limpiar()
 
     def _editar(self):
+        # Editar empleado (UPDATE)
         if not self.var_id.get():
             messagebox.showinfo("Info", "Seleccioná un empleado de la lista")
+            return
+        try:
+            tarifa = float(self.var_tarifa.get() or 0)
+        except Exception:
+            messagebox.showerror("Error", "Tarifa debe ser numérica")
             return
         datos = {
             "id": int(self.var_id.get()),
             "nombre": self.var_nombre.get().strip(),
             "apellido": self.var_apellido.get().strip(),
-            "tarifa_hora": float(self.var_tarifa.get() or 0)
+            "tarifa_hora": tarifa,
         }
-        self.controller.guardar(datos)  # UPDATE
+        self.controller.guardar(datos)  # -> UPDATE
         self._limpiar()
 
     def _eliminar(self):
         if not self.var_id.get():
-            messagebox.showinfo("Info", "Seleccioná un empleado de la tabla")
+            messagebox.showinfo("Info", "Seleccioná un empleado de la lista")
             return
         self.controller.eliminar(int(self.var_id.get()))
         self._limpiar()
+
+    # ----- usado por controller.cargar() -----
+    def mostrar_empleados(self, empleados):
+        for i in self.tree.get_children():
+            self.tree.delete(i)
+        for e in empleados:
+            self.tree.insert(
+                "", "end",
+                values=(
+                    e.get("id"),
+                    e.get("nombre", ""),
+                    e.get("apellido", ""),
+                    f"{float(e.get('tarifa_hora', 0.0)):.2f}",
+                )
+            )
 
     def _abrir_pagos(self):
         PagosDialog(self, self.controller)
