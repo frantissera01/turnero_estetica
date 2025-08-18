@@ -2,7 +2,10 @@
 from models.base_model import BaseModel
 from datetime import datetime, date
 from utils.conversions import to_time 
- 
+from typing import Optional, Dict, Any, Union, Tuple
+
+Row = Union[Dict[str, Any], Tuple[Any, ...]]
+
 class HorariosModel(BaseModel):
     def registrar_ingreso(self, empleado_id):
         f = date.today()
@@ -12,10 +15,10 @@ class HorariosModel(BaseModel):
             (empleado_id, f, h)
         )
 
-    def registrar_egreso(self, empleado_id):
+    def registrar_egreso(self, empleado_id: int):
         f = date.today()
         h_egreso = datetime.now().time()
-        reg = self.fetch_one(
+        reg: Optional[Row] = self.fetch_one(
             "SELECT id, hora_ingreso FROM horarios_empleados "
             "WHERE empleado_id=%s AND fecha=%s AND hora_egreso IS NULL "
             "ORDER BY id DESC LIMIT 1",
@@ -24,25 +27,33 @@ class HorariosModel(BaseModel):
         if not reg:
             return None
 
-        hora_ingreso = reg["hora_ingreso"] if isinstance(reg, dict) else reg[1]
-        # convertir a datetime para calcular
-        dt_in = datetime.combine(f, hora_ingreso)
+        # id y hora_ingreso según dict/tupla
+        if isinstance(reg, dict):
+            reg_id = reg["id"]
+            hora_ingreso_raw = reg["hora_ingreso"]
+        else:
+            reg_id = reg[0]
+            hora_ingreso_raw = reg[1]
+
+        # normalizar hora de ingreso a time
+        hi = to_time(hora_ingreso_raw)
+        if hi is None:
+            # no podemos calcular horas sin una hora válida
+            return None
+
+        # calcular horas trabajadas
+        dt_in = datetime.combine(f, hi)
         dt_out = datetime.combine(f, h_egreso)
         horas = (dt_out - dt_in).total_seconds() / 3600.0
 
-        # tarifa opcional (si la tenés)
-        # trow = self.fetch_one("SELECT tarifa_hora FROM empleados WHERE id=%s", (empleado_id,))
-        # tarifa = float(trow["tarifa_hora"]) if isinstance(trow, dict) else float(trow[0])
-        # pago = horas * tarifa
-
         self.execute_query(
             "UPDATE horarios_empleados SET hora_egreso=%s, horas_trabajadas=%s WHERE id=%s",
-            (h_egreso, horas, reg["id"] if isinstance(reg, dict) else reg[0])
+            (h_egreso, horas, reg_id)
         )
         return {
-            "hora_ingreso": hora_ingreso,
+            "hora_ingreso": hi,
             "hora_egreso": h_egreso,
-            "horas_trabajadas": horas
+            "horas_trabajadas": horas,
         }
 
     def estado_hoy(self):

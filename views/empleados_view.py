@@ -36,16 +36,24 @@ class EmpleadosView(tk.Frame):
 
         btns = tk.Frame(self)
         btns.pack(fill="x", padx=10)
-        ttk.Button(btns, text="Nuevo", command=self._limpiar).pack(side="left", padx=5)
-        ttk.Button(btns, text="Guardar", command=self._guardar).pack(side="left", padx=5)
+        ttk.Button(btns, text="Nuevo", command=self._registrar).pack(side="left", padx=5)
+        ttk.Button(btns, text="Editar", command=self._editar).pack(side="left", padx=5)
         ttk.Button(btns, text="Eliminar", command=self._eliminar).pack(side="left", padx=5)
+        ttk.Button(btns, text="Pagar", command=self._abrir_pagos).pack(side="left", padx=5) 
 
         cols = ("id", "nombre", "apellido", "tarifa_hora")
-        self.tree = ttk.Treeview(self, columns=cols, show="headings")
-        for c in cols:
-            self.tree.heading(c, text=c.upper())
+        self.tree = ttk.Treeview(self, columns=cols, show="headings", height=14)
+        headers = ("ID", "Nombre", "Apellido",  "Tarifa/Hora")
+        for c, t in zip(cols, headers):
+            self.tree.heading(c, text=t)
         self.tree.pack(fill="both", expand=True, padx=10, pady=10)
         self.tree.bind("<Double-1>", self._cargar_desde_tabla)
+
+    def _limpiar(self):
+        self.var_id.set("")
+        self.var_nombre.set("")
+        self.var_apellido.set("")
+        self.var_tarifa.set("0")
 
     def mostrar_empleados(self, empleados):
         for i in self.tree.get_children():
@@ -63,24 +71,30 @@ class EmpleadosView(tk.Frame):
         self.var_apellido.set(vals[2])
         self.var_tarifa.set(vals[3])
 
-    def _limpiar(self):
-        self.var_id.set("")
-        self.var_nombre.set("")
-        self.var_apellido.set("")
-        self.var_tarifa.set("")
-
-    def _guardar(self):
-        try:
-            datos = {
-                "id": int(self.var_id.get()) if self.var_id.get() else None,
-                "nombre": self.var_nombre.get().strip(),
-                "apellido": self.var_apellido.get().strip(),
-                "tarifa": float(self.var_tarifa.get())
-            }
-        except ValueError:
-            messagebox.showerror("Error", "Tarifa debe ser numérica")
+    def _registrar(self):
+        datos = {
+            "id": None,
+            "nombre": self.var_nombre.get().strip(),
+            "apellido": self.var_apellido.get().strip(),
+            "tarifa_hora": float(self.var_tarifa.get() or 0)
+        }
+        if not datos["nombre"] or not datos["apellido"]:
+            messagebox.showerror("Error", "Nombre, Apellido son obligatorios")
             return
-        self.controller.guardar(datos)
+        self.controller.guardar(datos)  # INSERT
+        self._limpiar()
+
+    def _editar(self):
+        if not self.var_id.get():
+            messagebox.showinfo("Info", "Seleccioná un empleado de la lista")
+            return
+        datos = {
+            "id": int(self.var_id.get()),
+            "nombre": self.var_nombre.get().strip(),
+            "apellido": self.var_apellido.get().strip(),
+            "tarifa_hora": float(self.var_tarifa.get() or 0)
+        }
+        self.controller.guardar(datos)  # UPDATE
         self._limpiar()
 
     def _eliminar(self):
@@ -89,3 +103,87 @@ class EmpleadosView(tk.Frame):
             return
         self.controller.eliminar(int(self.var_id.get()))
         self._limpiar()
+
+    def _abrir_pagos(self):
+        PagosDialog(self, self.controller)
+
+class PagosDialog(tk.Toplevel):
+    def __init__(self, parent, controller):
+        super().__init__(parent)
+        self.title("Pagos a empleados")
+        self.controller = controller
+        self.resizable(False, False)
+        self._build()
+        # cargar saldos inicial
+        self.controller.view = self  # para usar mostrar_saldos/alerta aquí
+        self.controller.cargar_saldos()
+
+    def _build(self):
+        frm = ttk.LabelFrame(self, text="Saldos pendientes")
+        frm.pack(fill="both", expand=True, padx=10, pady=10)
+
+        cols = ("empleado_id", "empleado", "devengado", "pagado", "saldo")
+        self.tree = ttk.Treeview(frm, columns=cols, show="headings", height=10)
+        headers = ("ID", "Empleado", "Devengado", "Pagado", "Saldo")
+        for c, t in zip(cols, headers):
+            self.tree.heading(c, text=t)
+            w = 90 if c != "empleado" else 220
+            self.tree.column(c, width=w, anchor="w")
+        self.tree.pack(fill="both", expand=True, padx=6, pady=6)
+
+        foot = tk.Frame(self)
+        foot.pack(fill="x", padx=10, pady=(0,10))
+
+        tk.Label(foot, text="Monto a pagar:").pack(side="left")
+        self.ent_monto = ttk.Entry(foot, width=12)
+        self.ent_monto.pack(side="left", padx=6)
+
+        ttk.Button(foot, text="Abonar parcial", command=self._pagar_parcial).pack(side="left", padx=4)
+        ttk.Button(foot, text="Abonar TOTAL",   command=self._pagar_total).pack(side="left", padx=4)
+
+        ttk.Button(foot, text="Cerrar", command=self.destroy).pack(side="right")
+
+    # Hooks para que el controller nos “inyecte” datos
+    def mostrar_saldos(self, data):
+        for i in self.tree.get_children():
+            self.tree.delete(i)
+        for d in data:
+            self.tree.insert("", "end", values=(
+                d["empleado_id"],
+                d["empleado"],
+                f"{d['devengado']:.2f}",
+                f"{d['pagado']:.2f}",
+                f"{d['saldo']:.2f}",
+            ))
+
+    def alerta(self, msg):
+        messagebox.showinfo("Información", msg)
+
+    def _get_selected_empleado(self):
+        it = self.tree.focus()
+        if not it:
+            self.alerta("Seleccioná un empleado de la lista.")
+            return None
+        vals = self.tree.item(it, "values")
+        try:
+            return int(str(vals[0]))
+        except Exception:
+            self.alerta("ID inválido.")
+            return None
+
+    def _pagar_total(self):
+        empleado_id = self._get_selected_empleado()
+        if empleado_id is None:
+            return
+        self.controller.pagar_total(empleado_id)
+
+    def _pagar_parcial(self):
+        empleado_id = self._get_selected_empleado()
+        if empleado_id is None:
+            return
+        try:
+            monto = float(self.ent_monto.get().strip().replace(",", "."))
+        except Exception:
+            self.alerta("Monto inválido.")
+            return
+        self.controller.pagar_parcial(empleado_id, monto)

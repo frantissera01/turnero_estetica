@@ -34,14 +34,17 @@ def safe_int(x: Any, default: int = 0) -> int:
             return default
 
 def to_time(x: Any) -> Optional[time]:
-    """Devuelve un time(HH:MM:SS) a partir de distintos tipos (time, datetime, str, Decimal, etc.)."""
+    """
+    Devuelve un time(HH:MM:SS) a partir de distintos tipos (time, datetime, str, Decimal, etc.).
+    Si no se puede interpretar, retorna None.
+    """
     if x is None:
         return None
     if isinstance(x, time):
         return x
     if isinstance(x, datetime):
         return x.time()
-    # Normalizamos todo lo demás a str y probamos varios formatos
+
     s = str(x).strip()
     # formatos comunes
     for fmt in ("%H:%M:%S", "%H:%M"):
@@ -50,14 +53,20 @@ def to_time(x: Any) -> Optional[time]:
             return time(dt.hour, dt.minute, dt.second)
         except Exception:
             pass
-    # último intento: si viene como "7:0:0" o "7:0"
+
+    # último intento: soportar "7:0:0" o "7:0" o incluso "7"
     parts = s.split(":")
     if 1 <= len(parts) <= 3 and all(p.replace(".", "", 1).isdigit() for p in parts):
         try:
             h = int(float(parts[0] or 0))
             m = int(float(parts[1] if len(parts) > 1 else 0))
             sec = int(float(parts[2] if len(parts) > 2 else 0))
-            return time(max(0, min(h, 23)), max(0, min(m, 59)), max(0, min(sec, 59)))
+            # clamp
+            h = max(0, min(h, 23))
+            m = max(0, min(m, 59))
+            sec = max(0, min(sec, 59))
+            return time(h, m, sec)
         except Exception:
             return None
+
     return None
