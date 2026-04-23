@@ -1,47 +1,84 @@
-# 💅 Sistema de Turnos - Centro de Estética
+# 💼 Appointment Management System (Aesthetic Center)
 
-Aplicación de escritorio desarrollada en Python para la gestión integral de turnos, clientes, empleados y planes en centros de estética. Pensada para facilitar el trabajo en la recepción del local, esta herramienta permite registrar sesiones, organizar horarios, calcular pagos semanales del personal y administrar los planes contratados por las clientas.
+Real-world desktop application developed for an aesthetic center.
 
----
-
-## 🖥️ Características principales
-
-- 📅 **Turnos semanales**: Vista de calendario de lunes a sábado de 7 a 20 hs.
-- 👥 **Gestión de clientas**:
-  - Registro y edición de datos.
-  - Seguimiento de número de sesiones utilizadas.
-  - Estado de pago de cada plan.
-- 🧑‍🔧 **Gestión de empleados**:
-  - Registro de ingresos y egresos con cálculo automático de horas trabajadas.
-  - Pago por hora configurado individualmente.
-  - Cálculo acumulado del total a cobrar cada viernes.
-- 💳 **Planes de tratamiento**:
-  - Registro y asignación de planes personalizados a cada clienta.
-  - Control de sesiones restantes.
-- 💬 **Preparado para integración futura con WhatsApp** para envío de recordatorios.
-- 🎨 Interfaz personalizada con imagen de fondo y navegación amigable.
+This system was designed to manage appointments, clients, and employees in a real business environment.
 
 ---
 
-## 🛠️ Tecnologías utilizadas
+## 🚀 Features
 
-- **Lenguaje**: Python 3.12
-- **Interfaz gráfica**: Tkinter
-- **Base de datos**: MySQL
-- **Paradigma**: Arquitectura modular (MVC)
-- **Herramientas complementarias**:
-  - `ttk` para widgets estilizados.
-  - `datetime` para manejo de fechas y horarios.
-  - `tkcalendar` (si se utiliza calendario visual).
+- 📅 Appointment scheduling (Monday to Saturday, 7 AM - 8 PM)
+- 👩‍💼 Client management (sessions, payments, contact info)
+- 👨‍💻 Employee tracking (check-in / check-out, worked hours)
+- 💰 Automatic salary calculation based on hours worked
+- 📊 Business-oriented logic for real operations
 
 ---
 
-## 🚀 Cómo ejecutar el proyecto
+## 🛠️ Tech Stack
 
-### 1. Clona el repositorio
+- Python
+- Tkinter (Desktop UI)
+- MySQL
+- MVC Architecture
 
-```bash
-git clone https://github.com/tu-usuario/turnero-estetica.git
-cd turnero-estetica
+---
+
+## 📸 Screenshots
+
+(Add screenshots here)
+
+---
+
+## 💡 Use Case
+
+This system is currently being developed for real use in an aesthetic center, helping to manage daily operations such as appointments, staff tracking, and client sessions.
+
+---
+
+## 🚧 Status
+
+In development – continuously being improved with new features and better structure.
+
+---
+
+## 📌 Author
+
+Developed by Franco Tissera as part of a real-world software project.
+
+---
 
 
+# 🇪🇸 Versión en Español
+
+## 💼 Sistema de Turnos (Centro de Estética)
+
+Aplicación de escritorio desarrollada para un centro de estética real.
+
+Permite gestionar turnos, clientes y empleados en un entorno de negocio real.
+
+---
+
+## 🚀 Funcionalidades
+
+- 📅 Gestión de turnos (lunes a sábado, 7 a 20 hs)
+- 👩‍💼 Registro de clientes (sesiones, pagos, contacto)
+- 👨‍💻 Control de empleados (ingreso, egreso, horas trabajadas)
+- 💰 Cálculo automático de salarios
+- 📊 Lógica orientada a negocio real
+
+---
+
+## 🛠️ Tecnologías
+
+- Python
+- Tkinter
+- MySQL
+- Arquitectura MVC
+
+---
+
+## 🚧 Estado
+
+En desarrollo – en mejora continua.
